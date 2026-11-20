@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#141026">
+<title>미스터리 셀러</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23302052'/%3E%3Ctext x='50' y='72' font-size='70' text-anchor='middle' fill='%23ffc957' font-family='sans-serif' font-weight='bold'%3E?%3C/text%3E%3C/svg%3E">
+<style>
+:root{--panel:#262042;--panel2:#3a3260;--field:#1a1630;--line:#60548f;--gold:#ffc957;--gold-h:#ffde8c;
+  --violet:#9678ff;--text:#f2eefc;--muted:#a09ac4;--danger:#f0606e;--ok:#60d696;--shadow:#0a0816}
+*{box-sizing:border-box}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+@media (min-width:900px){html{font-size:18px}}
+html,body{margin:0;min-height:100%;background:#141026}
+body{color:var(--text);font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",sans-serif;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#bg{position:fixed;inset:0;background:linear-gradient(#141026,#302052);z-index:0;overflow:hidden;pointer-events:none}
+#bg span{position:absolute;color:#3a2e62;font-weight:bold}
+#bg i{position:absolute;background:#78689f;border-radius:50%}
+#app{position:relative;z-index:1}
+button{font-family:inherit}
+
+/* ── 화면 공통 ── */
+.screen{display:none;min-height:100dvh;padding:14px 10px calc(24px + env(safe-area-inset-bottom))}
+.screen.on{display:block}
+.col{width:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.col.mid{max-width:760px}
+.col.wide{max-width:1000px}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 4px 0 var(--shadow)}
+.card h2{margin:0 0 10px;font-size:1.25rem;color:var(--gold);text-align:center}
+.title{margin:6px 0 0;text-align:center;font-size:clamp(2.3rem,10vw,3.6rem);color:var(--gold);line-height:1.15}
+.sub{text-align:center;color:var(--muted);margin:0 0 4px}
+.gold{color:var(--gold)} .muted{color:var(--muted)} .b{font-weight:bold} .c{text-align:center}
+.line{display:flex;align-items:center;gap:10px}
+.line label{white-space:nowrap;font-weight:bold}
+.hint{font-size:.85rem;color:var(--muted)}
+
+input.f{flex:1;min-width:0;height:48px;background:var(--field);border:2px solid var(--line);border-radius:10px;color:var(--text);
+  padding:0 12px;font-size:1.1rem;font-family:inherit;outline:none;-webkit-user-select:text;user-select:text}
+input.f:focus{border-color:var(--gold)}
+input.f::placeholder{color:var(--muted)}
+.btn{min-height:48px;padding:0 20px;border:0;border-radius:12px;background:var(--gold);color:#241a06;font-weight:bold;
+  font-size:1.1rem;box-shadow:0 4px 0 var(--shadow);cursor:pointer}
+.btn:hover:not(:disabled){background:var(--gold-h)}
+.btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 var(--shadow)}
+.btn:disabled{background:#3e3858;color:#88829f;cursor:not-allowed}
+.btn.sec{background:var(--panel2);color:var(--text)}
+.btn.sec:hover:not(:disabled){background:#4e447c}
+.btn.danger{background:#963648;color:var(--text)}
+.btn.danger:hover:not(:disabled){background:#bc465a}
+.btn.block{width:100%}
+.btn.big{min-height:58px;font-size:1.35rem}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--gold);border-radius:12px;background:var(--panel);
+  padding:6px 12px;color:var(--muted);white-space:nowrap;font-size:.95rem}
+.chip b{font-size:1.3rem;color:var(--gold)}
+.chip.hot{background:#541c2c;border-color:var(--danger)}
+.chip.hot b{color:var(--danger)}
+.pill{border:2px solid var(--line);background:var(--panel);border-radius:999px;padding:6px 16px;font-weight:bold;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+
+/* ── 인 게임 로비 ── */
+.grid2{display:grid;gap:12px;grid-template-columns:1fr}
+@media (min-width:900px){.grid2{grid-template-columns:1fr 1fr;align-items:start}}
+.codebtn{display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 14px}
+.codebtn b{font-size:1.5rem;color:var(--gold);letter-spacing:1px}
+.selrow{display:flex;gap:8px;align-items:center}
+.selrow .name{flex:1;text-align:center;background:var(--field);border-radius:10px;height:48px;line-height:48px;font-weight:bold;font-size:1.2rem}
+.arrow{width:48px;height:48px;border:0;border-radius:10px;background:var(--panel2);cursor:pointer;padding:0;flex:none;
+  display:flex;align-items:center;justify-content:center}
+.arrow:disabled{background:#32304a;cursor:not-allowed}
+.arrow:hover:not(:disabled){background:#4e447c}
+.arrow i{width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent}
+.arrow.l i{border-right:15px solid var(--gold)}
+.arrow.r i{border-left:15px solid var(--gold)}
+.arrow:disabled i{border-right-color:var(--muted);border-left-color:var(--muted)}
+.modeitem{padding:5px 12px;border-radius:8px;color:var(--muted);font-size:.95rem}
+.modeitem.on{background:var(--panel2);color:var(--gold);font-weight:bold}
+.row{display:flex;align-items:center;gap:8px;height:48px;border-radius:10px;background:var(--panel2);padding:0 14px;margin-bottom:8px;font-weight:bold}
+.row.empty{background:transparent;border:2px solid #302a4e;color:#6e6896;justify-content:center;font-weight:normal}
+.row .tags{margin-left:auto;display:flex;gap:10px;font-size:.8rem}
+.actions{display:flex;gap:10px}
+.actions .btn.grow{flex:1}
+
+/* ── 투표 ── */
+.vgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:26px 12px;margin-top:6px}
+@media (min-width:900px){.vgrid{grid-template-columns:repeat(4,1fr);gap:26px 18px}}
+.vcard{position:relative;border-radius:16px;background:var(--panel);border:2px solid var(--line);box-shadow:0 4px 0 var(--shadow);
+  padding:8px 8px 34px;cursor:pointer;transition:transform .12s}
+.vcard:hover{transform:translateY(-4px)}
+.vcard.sel{border:4px solid var(--gold);background:var(--panel2);padding:6px 6px 32px}
+.vcard .tag{position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:var(--gold);color:#241a06;
+  font-size:.85rem;font-weight:bold;border-radius:15px;padding:3px 12px;display:none;white-space:nowrap}
+.vcard.sel .tag{display:block}
+.vcard .cap{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-weight:bold;color:var(--muted)}
+.vcard.sel .cap{color:var(--gold)}
+.imgbox{background:#16122a;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.imgbox img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.imgbox.sq{aspect-ratio:1/1}
+.imgbox.tall{aspect-ratio:1/1;max-height:46dvh;margin:0 auto;width:100%}
+
+/* ── 채팅 화면 (판매자/구매자 판매 중) ── */
+.screen.chat{padding:0}
+.screen.chat.on{display:flex;flex-direction:column;height:100dvh;min-height:0}
+.screen.chat .topbar{padding:8px 10px}
+.carea{flex:1;min-height:0;position:relative}
+.carea.scroll{overflow-y:auto;padding:4px 10px 12px}
+.carea.fixed{overflow:hidden}
+.chatbar{display:flex;gap:8px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#1c1636;border-top:2px solid var(--line)}
+.chatbar input{height:46px}
+.chatbar .btn{min-height:46px;padding:0 18px}
+.buyers{position:absolute;left:10px;right:10px;top:4px;z-index:2}
+.buyers h3{margin:0 0 8px;font-size:1rem;color:var(--gold);text-align:center}
+.bchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.bchip{background:var(--panel2);border-radius:10px;padding:5px 12px;font-weight:bold;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (min-width:900px){
+  .buyers{right:auto;width:250px;top:8px}
+  .bchips{flex-direction:column;flex-wrap:nowrap}
+}
+.scenter{position:absolute;left:0;right:0;top:56%;transform:translateY(-50%);text-align:center;pointer-events:none;padding:0 12px}
+.scenter .big{font-size:min(46vw,230px);line-height:1;font-weight:bold;color:#40346c}
+.layer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3}
+.bubble{position:absolute;background:#f6f2ff;color:#241e3c;border:3px solid var(--violet);border-radius:16px;
+  padding:6px 14px 8px;font-size:1.05rem;line-height:1.35;word-break:break-all;transition:opacity 1.5s;animation:pop .25s ease-out}
+.bubble small{display:block;color:#6e50dc;font-weight:bold;font-size:.75rem;line-height:1.3}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.buybar{display:flex;align-items:center;gap:12px}
+.buybar .price{flex:1;font-weight:bold;color:var(--gold);font-size:1.15rem;text-align:center}
+.buybar .btn{min-width:42%;min-height:60px;font-size:1.4rem;border-radius:16px}
+.chatlog{min-height:5.6rem;font-size:1.05rem;line-height:1.45;word-break:break-all}
+.chatlog div{margin-bottom:2px}
+
+/* ── 결과 ── */
+.stat{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 4px;border-bottom:1px solid #4a4272}
+.stat:last-of-type{border-bottom:0}
+.stat span{color:var(--muted)}
+.stat b{font-size:1.3rem}
+.stat.total b{font-size:1.6rem;color:var(--gold)}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom));padding:8px 20px;
+  border-radius:20px;background:#1c1636;border:2px solid var(--gold);color:var(--gold);font-weight:bold;display:none;
+  width:max-content;max-width:92vw;text-align:center;z-index:50}
+#toast.error{border-color:var(--danger);color:var(--danger)}
+#toast.ok{border-color:var(--ok);color:var(--ok)}
+#drop{position:fixed;inset:0;background:rgba(20,16,38,.85);border:6px dashed var(--gold);display:none;align-items:center;
+  justify-content:center;font-size:2rem;font-weight:bold;color:var(--gold);z-index:60;pointer-events:none}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="app">
+
+<!-- ═════ 슬라이드 1 : 로비 ═════ -->
+<section class="screen on" id="s-title"><div class="col">
+  <h1 class="title">미스터리 셀러</h1>
+  <p class="sub">정체불명의 물건을 팔아라!</p>
+  <div class="card"><div class="line"><label for="in-name">이름 입력:</label>
+    <input class="f" id="in-name" maxlength="10" placeholder="이름" autocomplete="off"></div></div>
+  <div class="card"><h2>방 만들기</h2>
+    <div class="line" style="margin-bottom:12px"><label for="in-max">최대 인원:</label>
+      <input class="f" id="in-max" inputmode="numeric" maxlength="1" placeholder="2" style="flex:none;width:72px;text-align:center" autocomplete="off">
+      <span class="hint">(기본 2, 최대 6)</span></div>
+    <button class="btn block" id="btn-create">만들기</button></div>
+  <div class="card"><h2>참가하기</h2>
+    <div class="line" style="margin-bottom:12px"><label for="in-code">방 코드:</label>
+      <input class="f" id="in-code" maxlength="6" placeholder="ABC123" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase"></div>
+    <button class="btn block" id="btn-join">참가하기</button></div>
+  <div class="c gold b" id="connecting" style="display:none">서버에 연결하는 중…</div>
+</div></section>
+
+<!-- ═════ 슬라이드 2 : 인 게임 로비 ═════ -->
+<section class="screen" id="s-room"><div class="col wide">
+  <div class="topbar">
+    <div class="card codebtn" id="codebox" title="누르면 초대 링크가 복사돼요"><span class="muted">방 코드:</span><b id="room-code"></b></div>
+    <div style="text-align:right"><div class="muted b" id="room-count"></div><div class="hint">코드를 누르면 초대 링크 복사</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>사진 선택</h2>
+      <div class="selrow"><button class="arrow l" id="mode-prev"><i></i></button><div class="name" id="mode-name"></div><button class="arrow r" id="mode-next"><i></i></button></div>
+      <div id="mode-list" style="margin:10px 0 4px"></div>
+      <div class="hint" id="mode-desc" style="margin-bottom:12px"></div>
+      <div class="actions"><button class="btn grow" id="btn-file">파일 선택</button><button class="btn sec" id="btn-clear">지우기</button></div>
+      <input type="file" id="file-in" accept="image/*" multiple style="display:none">
+      <div class="hint c" id="upload-msg" style="margin-top:8px"></div>
+    </div>
+    <div class="card"><h2>참가자</h2><div id="players"></div></div>
+  </div>
+  <div class="b" id="start-why" style="text-align:right;min-height:1.2em;font-size:.95rem"></div>
+  <div class="actions"><button class="btn danger" id="btn-leave">방 나가기</button><button class="btn big grow" id="btn-start">게임 시작</button></div>
+</div></section>
+
+<!-- ═════ 슬라이드 3 : 판매자 (물건이 정해지기 전) ═════ -->
+<section class="screen" id="s-wait"><div class="col mid">
+  <div class="topbar"><span></span><span class="chip" id="chip-wait">남은 투표 시간: <b>1:00</b></span></div>
+  <div class="card c b" id="wait-msg" style="font-size:1.5rem;padding:26px 10px">물건이 정해지는 중입니다</div>
+  <div class="card"><div class="line"><label for="in-price" style="font-size:1.15rem">물건 가격:</label>
+    <input class="f" id="in-price" inputmode="numeric" maxlength="8" placeholder="10000" autocomplete="off" style="font-size:1.3rem"><b style="font-size:1.2rem">원</b></div>
+    <div class="c" id="price-hint" style="margin-top:12px;font-size:.95rem"></div></div>
+  <div class="c muted" style="font-size:.9rem">구매자들이 물건을 투표로 고르는 중이에요.<br>무슨 물건일지는 비밀!</div>
+</div></section>
+
+<!-- ═════ 슬라이드 4 : 구매자 (물건 투표) ═════ -->
+<section class="screen" id="s-vote"><div class="col wide">
+  <div class="topbar"><span class="pill muted" id="vote-seller"></span><span class="chip" id="chip-vote">남은 투표 시간: <b>1:00</b></span></div>
+  <div class="c"><div class="b" style="font-size:1.2rem">마음에 드는 물건을 눌러 투표하세요</div>
+    <div class="hint">다른 물건을 누르면 선택이 바뀌어요</div></div>
+  <div class="vgrid" id="cards"></div>
+  <div class="c b" id="vote-status" style="font-size:1.1rem"></div>
+  <div class="c hint">모든 구매자가 투표하면 남은 시간이 3초로 줄어들어요</div>
+</div></section>
+
+<!-- ═════ 슬라이드 5 : 판매자 (물건이 정해진 후) ═════ -->
+<section class="screen chat" id="s-sseller">
+  <div class="topbar"><span class="gold b" id="my-price"></span><span class="chip" id="chip-ssale">남은 판매 시간: <b>8:00</b></span></div>
+  <div class="carea fixed" id="sarea">
+    <div class="card buyers avoid"><h3>구매한 구매자 명단</h3><div class="bchips" id="buyers"></div></div>
+    <div class="scenter"><div class="big">?</div><div class="b" style="font-size:1.4rem">무슨 물건인지는 비밀!</div>
+      <div class="muted" style="margin-top:4px">구매자들의 설명을 듣고 구매하도록 설득해 보세요</div></div>
+    <div class="layer" id="bubbles"></div>
+  </div>
+  <div class="chatbar"><input class="f" id="chat-s" maxlength="60" placeholder="구매자들에게 말하기" autocomplete="off" enterkeyhint="send"><button class="btn" id="send-s">전송</button></div>
+</section>
+
+<!-- ═════ 슬라이드 6 : 구매자 (판매 중) ═════ -->
+<section class="screen chat" id="s-sbuyer">
+  <div class="topbar"><span class="pill" id="b-seller"></span><span class="chip" id="chip-bsale">판매 종료: <b>8:00</b></span></div>
+  <div class="carea scroll"><div class="col mid">
+    <div class="card" style="padding:8px"><div class="imgbox tall"><img id="item-img" alt=""></div></div>
+    <div class="buybar"><div class="price" id="b-price"></div><button class="btn" id="btn-buy">구매</button></div>
+    <div class="card"><div class="hint b" style="margin-bottom:6px">판매자 채팅</div><div class="chatlog" id="chatlog"></div></div>
+  </div></div>
+  <div class="chatbar"><input class="f" id="chat-b" maxlength="60" placeholder="판매자에게 물건을 설명해 보세요" autocomplete="off" enterkeyhint="send"><button class="btn" id="send-b">전송</button></div>
+</section>
+
+<!-- ═════ 슬라이드 7 : 결과 창 (사진 → 통계 → 판 끝내기) ═════ -->
+<section class="screen" id="s-result"><div class="col mid">
+  <div class="card c b" id="r-seller" style="font-size:1.3rem;padding:10px"></div>
+  <div class="card" style="padding:8px"><div class="imgbox tall"><img id="r-img" alt=""></div></div>
+  <div class="card"><h2>통계</h2>
+    <div class="stat"><span>판매가</span><b id="r-price"></b></div>
+    <div class="stat"><span>구매한 사람 수</span><b id="r-count"></b></div>
+    <div class="stat total"><span>총 판매가</span><b id="r-total"></b></div>
+    <div class="hint c" id="r-buyers" style="margin-top:8px"></div></div>
+  <button class="btn big block" id="btn-back">판 끝내기</button>
+</div></section>
+
+</div>
+<div id="toast"></div>
+<div id="drop">사진을 여기에 놓으세요</div>
+
+<script>
+"use strict";
+// ───────── 규칙 상수 (server 의 common.py 와 같아야 함) ─────────
+const DEFAULT_PRICE = 10000, MAX_UPLOADS = 8, MIN_PLAYERS = 2, MAX_PLAYERS = 6, UPLOAD_MAX_PX = 480;
+const MODES = [["default", "기본 사진", "준비된 기본 사진만 사용해요"],
+               ["upload", "파일 업로드", "참가자들이 올린 사진만 사용해요"],
+               ["mix", "혼합", "기본 사진과 올린 사진을 섞어서 사용해요"]];
+const TOUCH = !matchMedia("(hover: hover)").matches;      // 터치 기기에선 자동 포커스(키보드 팝업) 금지
+
+const $ = (s) => document.querySelector(s);
+const won = (n) => Number(n).toLocaleString("ko-KR") + "원";
+const el = (tag, cls, text) => { const d = document.createElement(tag); if (cls) d.className = cls; if (text != null) d.textContent = text; return d; };
+const focusIf = (sel) => { if (!TOUCH) $(sel).focus(); };
+
+// 배경 장식
+(function deco() {
+  const bg = $("#bg"); let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 18; i++) { const d = el("span", "", "?"); d.style.cssText = `left:${rnd() * 100}%;top:${rnd() * 100}%;font-size:${[40, 64, 96][i % 3]}px;transform:rotate(${rnd() * 70 - 35}deg)`; bg.append(d); }
+  for (let i = 0; i < 60; i++) { const r = rnd() < .3 ? 3 : 2, d = el("i"); d.style.cssText = `left:${rnd() * 100}%;top:${rnd() * 100}%;width:${r}px;height:${r}px`; bg.append(d); }
+})();
+
+// ───────── 상태 ─────────
+const S = { ws: null, pid: null, room: null, images: {}, game: null, screen: "title", busy: false, bubbles: [], pingTimer: 0 };
+const imgSrc = (id) => !id ? "" : id[0] === "d" ? `items/${id}.png` : (S.images[id] || "");
+
+function show(name) {
+  S.screen = name;
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === "s-" + name));
+  scrollTo(0, 0);
+  if (name === "sseller") focusIf("#chat-s");
+  if (name === "sbuyer") focusIf("#chat-b");
+  if (name === "wait") focusIf("#in-price");
+}
+let toastTimer = 0;
+function toast(msg, kind) {
+  const t = $("#toast"); t.textContent = msg; t.className = kind || ""; t.style.display = "block";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.style.display = "none"), 3000);
+}
+
+// ───────── 통신 ─────────
+function send(m) { if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.stringify(m)); }
+function connect() {
+  return new Promise((resolve, reject) => {
+    if (S.ws && S.ws.readyState === 1) return resolve();
+    const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+    S.ws = ws;
+    ws.onopen = () => { clearInterval(S.pingTimer); S.pingTimer = setInterval(() => send({ t: "ping" }), 25000); resolve(); };
+    ws.onerror = () => reject();
+    ws.onmessage = (e) => { const m = JSON.parse(e.data); const h = H[m.t]; if (h) h(m); };
+    ws.onclose = () => {
+      clearInterval(S.pingTimer);
+      if (S.ws !== ws) return;
+      S.ws = null;
+      if (S.screen !== "title") toast("서버와 연결이 끊어졌어요", "error");
+      S.room = null; S.game = null; show("title");
+    };
+  });
+}
+async function request(msg, name) {
+  if (S.busy) return;
+  try { localStorage.setItem("ms_name", name); } catch (e) {}
+  S.busy = true; $("#connecting").style.display = "block";
+  try { await connect(); send(msg); }
+  catch (e) { toast("서버에 연결할 수 없어요", "error"); }
+  S.busy = false; $("#connecting").style.display = "none";
+}
+
+// ───────── 서버 메시지 ─────────
+const H = {
+  error: (m) => toast(m.msg || "오류가 발생했어요", "error"),
+  joined(m) { S.pid = m.you; S.room = m.room; S.images = {}; S.game = null; renderRoom(); show("room"); },
+  room(m) { S.room = m.room; if (S.screen === "room") renderRoom(); },
+  image(m) { S.images[m.id] = "data:image/jpeg;base64," + m.data; },
+  game_start(m) {
+    S.game = { role: m.role, sellerName: m.seller_name, candidates: m.candidates, deadline: Date.now() + m.ends_in * 1000,
+               vote: null, price: null, item: null, bought: [], iBought: false, result: null, sentPrice: undefined, log: [] };
+    if (m.role === "seller") { $("#in-price").value = ""; updatePriceHint(); show("wait"); }
+    else { renderVote(); show("vote"); }
+    tick();
+  },
+  timer(m) { if (S.game) { S.game.deadline = Date.now() + m.ends_in * 1000; tick(); } },
+  sale_start(m) {
+    const g = S.game; if (!g) return;
+    Object.assign(g, { item: m.item, price: m.price, deadline: Date.now() + m.ends_in * 1000 });
+    if (g.role === "seller") {
+      S.bubbles = []; $("#bubbles").innerHTML = "";
+      $("#my-price").textContent = "내 가격: " + won(g.price); renderBuyers(); show("sseller");
+    } else {
+      $("#b-seller").textContent = "판매자: " + g.sellerName; $("#item-img").src = imgSrc(g.item);
+      $("#b-price").textContent = "가격 " + won(g.price); renderChatLog(); renderBuy(); show("sbuyer");
+    }
+    tick();
+  },
+  chat(m) { m.from_seller ? onSellerChat(m) : onBuyerChat(m); },
+  bought(m) {
+    const g = S.game; if (!g) return;
+    if (m.self) { g.iBought = true; renderBuy(); }
+    else { g.bought.push(m.name); renderBuyers(); toast(`${m.name}님이 구매했어요!`, "ok"); }
+  },
+  result(m) {
+    const g = S.game; if (!g) return; g.result = m; $("#toast").style.display = "none";
+    $("#r-seller").textContent = "판매자: " + m.seller_name; $("#r-img").src = imgSrc(m.item);
+    $("#r-price").textContent = won(m.price); $("#r-count").textContent = m.count + "명"; $("#r-total").textContent = won(m.total);
+    $("#r-buyers").textContent = "구매자: " + (m.buyers.length ? m.buyers.join(", ") : "구매한 사람이 없어요…");
+    show("result");
+  },
+  aborted(m) { toast(m.msg || "게임이 중단됐어요", "error"); S.game = null; if (S.room) { renderRoom(); show("room"); } },
+};
+
+// ───────── 슬라이드 1 : 로비 ─────────
+const nameVal = () => { const n = $("#in-name").value.trim(); if (!n) { toast("이름을 입력해 주세요", "error"); $("#in-name").focus(); } return n; };
+$("#btn-create").onclick = () => {
+  const n = nameVal(); if (!n) return;
+  const raw = $("#in-max").value.trim(), mx = raw ? parseInt(raw, 10) : 2;
+  if (!(mx >= MIN_PLAYERS && mx <= MAX_PLAYERS)) return toast(`최대 인원은 ${MIN_PLAYERS}~${MAX_PLAYERS}명이에요`, "error");
+  request({ t: "create", name: n, max: mx }, n);
+};
+$("#btn-join").onclick = () => {
+  const n = nameVal(); if (!n) return;
+  const code = $("#in-code").value.trim().toUpperCase();
+  if (code.length !== 6) { $("#in-code").focus(); return toast("방 코드는 6자리예요", "error"); }
+  request({ t: "join", name: n, code }, n);
+};
+$("#in-max").oninput = (e) => (e.target.value = e.target.value.replace(/\D/g, ""));
+$("#in-code").oninput = (e) => (e.target.value = e.target.value.toUpperCase());
+$("#in-name").onkeydown = (e) => { if (e.key === "Enter" && !e.isComposing) $("#in-code").value ? $("#btn-join").click() : $("#in-code").focus(); };
+$("#in-max").onkeydown = (e) => { if (e.key === "Enter") $("#btn-create").click(); };
+$("#in-code").onkeydown = (e) => { if (e.key === "Enter") $("#btn-join").click(); };
+try { $("#in-name").value = localStorage.getItem("ms_name") || ""; } catch (e) {}
+const urlRoom = new URLSearchParams(location.search).get("room");
+if (urlRoom) { $("#in-code").value = urlRoom.toUpperCase().slice(0, 6); if (!TOUCH) ($("#in-name").value ? $("#btn-join") : $("#in-name")).focus(); }
+else if (!$("#in-name").value) focusIf("#in-name");
+
+// ───────── 슬라이드 2 : 인 게임 로비 ─────────
+const isHost = () => S.room && S.room.host === S.pid;
+const me = () => (S.room.players.find((p) => p.id === S.pid) || { uploads: 0 });
+function startState() {
+  const r = S.room;
+  if (!isHost()) return [false, "방장이 시작하길 기다리는 중…"];
+  if (r.players.length < MIN_PLAYERS) return [false, `최소 ${MIN_PLAYERS}명이 필요해요`];
+  if (r.players.some((p) => !p.at_lobby)) return [false, "결과 화면을 보는 사람이 있어요"];
+  if (r.mode === "upload" && r.upload_total === 0) return [false, "업로드한 파일이 없어요"];
+  return [true, ""];
+}
+function renderRoom() {
+  const r = S.room; if (!r) return;
+  $("#room-code").textContent = r.code;
+  $("#room-count").textContent = `인원 ${r.players.length}/${r.max}`;
+  const mi = MODES.findIndex((m) => m[0] === r.mode);
+  $("#mode-name").textContent = MODES[mi][1];
+  $("#mode-prev").disabled = $("#mode-next").disabled = !isHost();
+  $("#btn-file").disabled = r.mode === "default";
+  $("#btn-clear").disabled = r.mode === "default" || me().uploads === 0;
+  $("#upload-msg").textContent = r.mode === "default" ? "기본 사진 모드에서는 파일을 올릴 수 없어요"
+    : `내가 올린 사진 ${me().uploads}/${MAX_UPLOADS}장 · 전체 ${r.upload_total}장`;
+  const ml = $("#mode-list"); ml.innerHTML = "";
+  MODES.forEach((m, i) => ml.append(el("div", "modeitem" + (i === mi ? " on" : ""), `${i + 1}. ${m[1]}`)));
+  $("#mode-desc").textContent = MODES[mi][2] + (isHost() ? "" : " (방장만 바꿀 수 있어요)");
+  const box = $("#players"); box.innerHTML = "";
+  for (let i = 0; i < r.max; i++) {
+    const p = r.players[i], row = el("div", "row" + (p ? "" : " empty"));
+    if (p) {
+      row.append(el("span", "", p.name));
+      const tags = el("div", "tags");
+      if (p.id === r.host) tags.append(el("span", "gold", "방장"));
+      if (p.id === S.pid) tags.append(el("span", "", "나")), (tags.lastChild.style.color = "var(--ok)");
+      if (!p.at_lobby) tags.append(el("span", "muted", "결과 보는 중"));
+      row.append(tags);
+    } else row.textContent = "비어 있음";
+    box.append(row);
+  }
+  const [ok, why] = startState();
+  $("#btn-start").disabled = !ok;
+  const w = $("#start-why"); w.textContent = why; w.style.color = isHost() ? "var(--danger)" : "var(--muted)";
+}
+function setMode(step) {
+  if (!isHost()) return;
+  const i = MODES.findIndex((m) => m[0] === S.room.mode);
+  send({ t: "set_mode", mode: MODES[(i + step + MODES.length) % MODES.length][0] });
+}
+$("#mode-prev").onclick = () => setMode(-1);
+$("#mode-next").onclick = () => setMode(1);
+$("#btn-start").onclick = () => send({ t: "start" });
+$("#btn-leave").onclick = () => { send({ t: "leave" }); S.room = null; S.game = null; show("title"); };
+$("#btn-clear").onclick = () => send({ t: "clear_uploads" });
+$("#btn-file").onclick = () => $("#file-in").click();
+$("#codebox").onclick = async () => {
+  const link = `${location.origin}${location.pathname}?room=${S.room.code}`;
+  try { await navigator.clipboard.writeText(link); toast("초대 링크를 복사했어요!", "ok"); }
+  catch (e) { toast("복사하지 못했어요: " + link, "error"); }
+};
+$("#file-in").onchange = (e) => { uploadFiles([...e.target.files]); e.target.value = ""; };
+
+function loadScaled(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, UPLOAD_MAX_PX / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+      const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); resolve(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+    img.src = url;
+  });
+}
+async function uploadFiles(files) {
+  if (!S.room || S.screen !== "room") return;
+  if (S.room.mode === "default") return toast("기본 사진 모드에서는 업로드할 수 없어요", "error");
+  const left = MAX_UPLOADS - me().uploads;
+  if (left <= 0) return toast(`사진은 ${MAX_UPLOADS}장까지 올릴 수 있어요`, "error");
+  let bad = 0;
+  for (const f of files.slice(0, left)) {
+    try { send({ t: "upload", data: await loadScaled(f) }); } catch (e) { bad++; }
+  }
+  if (bad) toast(`사진 ${bad}장은 열 수 없는 파일이에요`, "error");
+}
+let dragDepth = 0;
+addEventListener("dragenter", (e) => { e.preventDefault(); if (S.screen === "room") { dragDepth++; $("#drop").style.display = "flex"; } });
+addEventListener("dragleave", () => { if (--dragDepth <= 0) { dragDepth = 0; $("#drop").style.display = "none"; } });
+addEventListener("dragover", (e) => e.preventDefault());
+addEventListener("drop", (e) => { e.preventDefault(); dragDepth = 0; $("#drop").style.display = "none"; uploadFiles([...e.dataTransfer.files].filter((f) => f.type.startsWith("image/"))); });
+
+// ───────── 슬라이드 3 : 판매자 가격 입력 ─────────
+function priceValue() { const t = $("#in-price").value; const v = t ? parseInt(t, 10) : 0; return v > 0 && v <= 99999999 ? v : null; }
+function updatePriceHint() {
+  const v = priceValue(), h = $("#price-hint");
+  h.textContent = v ? `판매가: ${won(v)}` : `입력하지 않으면 기본 가격(${won(DEFAULT_PRICE)})으로 적용돼요`;
+  h.style.color = v ? "var(--gold)" : "var(--muted)";
+}
+$("#in-price").oninput = (e) => {
+  e.target.value = e.target.value.replace(/\D/g, ""); updatePriceHint();
+  const v = priceValue(); if (S.game && v !== S.game.sentPrice) { S.game.sentPrice = v; send({ t: "price", price: v }); }
+};
+
+// ───────── 슬라이드 4 : 구매자 투표 ─────────
+function renderVote() {
+  const g = S.game;
+  $("#vote-seller").textContent = "판매자: " + g.sellerName;
+  const box = $("#cards"); box.innerHTML = "";
+  g.candidates.forEach((id, i) => {
+    const c = el("div", "vcard"), ib = el("div", "imgbox sq"), im = el("img");
+    im.src = imgSrc(id); ib.append(im);
+    c.append(el("div", "tag", "내 선택"), ib, el("div", "cap", `물건 ${i + 1}`));
+    c.onclick = () => { if (g.vote !== i) { g.vote = i; send({ t: "vote", idx: i }); updateVote(); } };
+    box.append(c);
+  });
+  updateVote();
+}
+function updateVote() {
+  const g = S.game;
+  [...$("#cards").children].forEach((c, i) => c.classList.toggle("sel", g.vote === i));
+  const s = $("#vote-status"); s.textContent = g.vote != null ? "투표 완료! 다른 구매자를 기다리는 중…" : "아직 투표하지 않았어요";
+  s.style.color = g.vote != null ? "var(--ok)" : "var(--muted)";
+}
+
+// ───────── 슬라이드 5 : 판매자 (판매 중) ─────────
+function renderBuyers() {
+  const g = S.game, box = $("#buyers"); box.innerHTML = "";
+  if (!g.bought.length) box.append(el("div", "muted", "아직 없어요"));
+  g.bought.forEach((n) => box.append(el("div", "bchip", n)));
+}
+function onBuyerChat(m) {
+  if (S.screen !== "sseller") return;
+  const area = $("#sarea"), layer = $("#bubbles"), ar = area.getBoundingClientRect();
+  const b = el("div", "bubble"); b.style.visibility = "hidden"; b.style.left = b.style.top = "0px";
+  b.style.maxWidth = Math.min(400, ar.width - 20) + "px";
+  const nm = el("small", "", m.name); b.append(nm, document.createTextNode(m.text)); layer.append(b);
+  const w = b.offsetWidth, h = b.offsetHeight;
+  const rel = (r) => ({ x: r.left - ar.left, y: r.top - ar.top, w: r.width, h: r.height });
+  const obst = [...area.querySelectorAll(".avoid")].map((e) => rel(e.getBoundingClientRect()))
+    .concat(S.bubbles.map((o) => ({ x: o.x - 8, y: o.y - 8, w: o.w + 16, h: o.h + 16 })));
+  let best = { x: 8, y: 8 }, hits = 99;
+  for (let i = 0; i < 80 && hits > 0; i++) {
+    const x = 8 + Math.random() * Math.max(0, ar.width - 16 - w), y = 8 + Math.random() * Math.max(0, ar.height - 16 - h);
+    const n = obst.filter((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h).length;
+    if (n < hits) { hits = n; best = { x, y }; }
+  }
+  Object.assign(b.style, { left: best.x + "px", top: best.y + "px", visibility: "visible" });
+  const rec = { x: best.x, y: best.y, w, h }; S.bubbles.push(rec);
+  setTimeout(() => (b.style.opacity = 0), 8500);
+  setTimeout(() => { b.remove(); S.bubbles = S.bubbles.filter((o) => o !== rec); }, 10000);
+}
+
+// ───────── 슬라이드 6 : 구매자 (판매 중) ─────────
+function renderBuy() {
+  const b = $("#btn-buy"), done = S.game.iBought;
+  b.textContent = done ? "구매 완료" : "구매"; b.disabled = done;
+}
+$("#btn-buy").onclick = () => send({ t: "buy" });
+function onSellerChat(m) { if (!S.game) return; S.game.log.push(m.text); renderChatLog(); }
+function renderChatLog() {
+  const box = $("#chatlog"); box.innerHTML = ""; const log = S.game.log;
+  if (!log.length) { const d = el("div", "muted c", "판매자가 말을 걸면 여기에 나타나요"); d.style.paddingTop = "1rem"; box.append(d); return; }
+  log.slice(-4).forEach((t) => box.append(el("div", "", t)));
+}
+$("#btn-back").onclick = () => { send({ t: "back_lobby" }); renderRoom(); show("room"); };
+
+// ───────── 채팅 입력줄 (판매자/구매자 공통) ─────────
+function bindChat(inputSel, btnSel) {
+  const inp = $(inputSel);
+  const go = () => {
+    const text = inp.value.trim(); if (!text) return;
+    send({ t: "chat", text }); inp.value = ""; toast("전송됨: " + text.slice(0, 20), "ok");
+  };
+  inp.onkeydown = (e) => { if (e.key === "Enter" && !e.isComposing) go(); };
+  $(btnSel).onpointerdown = (e) => e.preventDefault();       // 버튼을 눌러도 키보드가 안 내려가게
+  $(btnSel).onclick = () => { go(); if (!TOUCH) inp.focus(); };
+}
+bindChat("#chat-s", "#send-s"); bindChat("#chat-b", "#send-b");
+document.addEventListener("keydown", (e) => {          // PC: 아무 키나 치면 채팅창으로
+  if (TOUCH || e.ctrlKey || e.metaKey || e.altKey || document.activeElement.tagName === "INPUT") return;
+  if (S.screen === "sseller") $("#chat-s").focus(); else if (S.screen === "sbuyer") $("#chat-b").focus();
+});
+
+// ───────── 타이머 ─────────
+const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+function tick() {
+  const g = S.game; if (!g) return;
+  const s = Math.max(0, Math.ceil((g.deadline - Date.now()) / 1000));
+  const c = document.querySelector(".screen.on .chip"); if (!c) return;
+  c.querySelector("b").textContent = fmt(s); c.classList.toggle("hot", s <= 10);
+  if (S.screen === "wait") $("#wait-msg").textContent = "물건이 정해지는 중입니다" + ".".repeat(Math.floor(Date.now() / 500) % 4);
+}
+setInterval(tick, 250);
+</script>
+</body>
+</html>
