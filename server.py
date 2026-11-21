@@ -257,8 +257,6 @@ class GameServer:
             return
         if room.mode == "default":
             return p.send(err("기본 사진 모드에서는 업로드할 수 없어요"))
-        if len(p.uploads) >= MAX_UPLOADS_PER_PLAYER:
-            return p.send(err(f"사진은 한 사람당 {MAX_UPLOADS_PER_PLAYER}장까지 올릴 수 있어요"))
         data = msg.get("data")
         if not isinstance(data, str) or not data or len(data) > MAX_IMAGE_B64:
             return p.send(err("사진 파일이 너무 크거나 올바르지 않아요"))
