@@ -81,6 +81,8 @@ input.f::placeholder{color:var(--muted)}
 .row{display:flex;align-items:center;gap:8px;height:48px;border-radius:10px;background:var(--panel2);padding:0 14px;margin-bottom:8px;font-weight:bold}
 .row.empty{background:transparent;border:2px solid #302a4e;color:#6e6896;justify-content:center;font-weight:normal}
 .row .tags{margin-left:auto;display:flex;gap:10px;font-size:.8rem}
+#players{max-height:46dvh;overflow-y:auto}
+.sticky{position:sticky;bottom:0;z-index:5;margin-top:auto;padding:12px 0 calc(8px + env(safe-area-inset-bottom));background:linear-gradient(rgba(26,20,48,0),#1a1430 30%)}
 .actions{display:flex;gap:10px}
 .actions .btn.grow{flex:1}
 
@@ -111,13 +113,13 @@ input.f::placeholder{color:var(--muted)}
 .chatbar{display:flex;gap:8px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#1c1636;border-top:2px solid var(--line)}
 .chatbar input{height:46px}
 .chatbar .btn{min-height:46px;padding:0 18px}
-.buyers{position:absolute;left:10px;right:10px;top:4px;z-index:2}
+.buyers{position:absolute;left:10px;right:10px;top:4px;z-index:4}
 .buyers h3{margin:0 0 8px;font-size:1rem;color:var(--gold);text-align:center}
-.bchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.bchip{background:var(--panel2);border-radius:10px;padding:5px 12px;font-weight:bold;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-height:7.2rem;overflow-y:auto}
+.bchip{flex:none;background:var(--panel2);border-radius:10px;padding:5px 12px;font-weight:bold;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (min-width:900px){
   .buyers{right:auto;width:250px;top:8px}
-  .bchips{flex-direction:column;flex-wrap:nowrap}
+  .bchips{flex-direction:column;flex-wrap:nowrap;max-height:60dvh}
 }
 .scenter{position:absolute;left:0;right:0;top:56%;transform:translateY(-50%);text-align:center;pointer-events:none;padding:0 12px}
 .scenter .big{font-size:min(46vw,230px);line-height:1;font-weight:bold;color:#40346c}
@@ -160,8 +162,8 @@ input.f::placeholder{color:var(--muted)}
     <input class="f" id="in-name" maxlength="10" placeholder="이름" autocomplete="off"></div></div>
   <div class="card"><h2>방 만들기</h2>
     <div class="line" style="margin-bottom:12px"><label for="in-max">최대 인원:</label>
-      <input class="f" id="in-max" inputmode="numeric" maxlength="1" placeholder="2" style="flex:none;width:72px;text-align:center" autocomplete="off">
-      <span class="hint">(기본 2, 최대 6)</span></div>
+      <input class="f" id="in-max" inputmode="numeric" maxlength="2" placeholder="2" style="flex:none;width:72px;text-align:center" autocomplete="off">
+      <span class="hint">(기본 2, 최대 20)</span></div>
     <button class="btn block" id="btn-create">만들기</button></div>
   <div class="card"><h2>참가하기</h2>
     <div class="line" style="margin-bottom:12px"><label for="in-code">방 코드:</label>
@@ -188,8 +190,10 @@ input.f::placeholder{color:var(--muted)}
     </div>
     <div class="card"><h2>참가자</h2><div id="players"></div></div>
   </div>
-  <div class="b" id="start-why" style="text-align:right;min-height:1.2em;font-size:.95rem"></div>
-  <div class="actions"><button class="btn danger" id="btn-leave">방 나가기</button><button class="btn big grow" id="btn-start">게임 시작</button></div>
+  <div class="sticky">
+    <div class="b" id="start-why" style="text-align:right;min-height:1.2em;font-size:.95rem;margin-bottom:6px"></div>
+    <div class="actions"><button class="btn danger" id="btn-leave">방 나가기</button><button class="btn big grow" id="btn-start">게임 시작</button></div>
+  </div>
 </div></section>
 
 <!-- ═════ 슬라이드 3 : 판매자 (물건이 정해지기 전) ═════ -->
@@ -254,7 +258,7 @@ input.f::placeholder{color:var(--muted)}
 <script>
 "use strict";
 // ───────── 규칙 상수 (server 의 common.py 와 같아야 함) ─────────
-const DEFAULT_PRICE = 10000, MAX_UPLOADS = 8, MIN_PLAYERS = 2, MAX_PLAYERS = 6, UPLOAD_MAX_PX = 480;
+const DEFAULT_PRICE = 10000, MIN_PLAYERS = 2, MAX_PLAYERS = 20, UPLOAD_MAX_PX = 480;
 const MODES = [["default", "기본 사진", "준비된 기본 사진만 사용해요"],
                ["upload", "파일 업로드", "참가자들이 올린 사진만 사용해요"],
                ["mix", "혼합", "기본 사진과 올린 사진을 섞어서 사용해요"]];
@@ -405,23 +409,23 @@ function renderRoom() {
   $("#btn-file").disabled = r.mode === "default";
   $("#btn-clear").disabled = r.mode === "default" || me().uploads === 0;
   $("#upload-msg").textContent = r.mode === "default" ? "기본 사진 모드에서는 파일을 올릴 수 없어요"
-    : `내가 올린 사진 ${me().uploads}/${MAX_UPLOADS}장 · 전체 ${r.upload_total}장`;
+    : `내가 올린 사진 ${me().uploads}장 · 전체 ${r.upload_total}장`;
   const ml = $("#mode-list"); ml.innerHTML = "";
   MODES.forEach((m, i) => ml.append(el("div", "modeitem" + (i === mi ? " on" : ""), `${i + 1}. ${m[1]}`)));
   $("#mode-desc").textContent = MODES[mi][2] + (isHost() ? "" : " (방장만 바꿀 수 있어요)");
   const box = $("#players"); box.innerHTML = "";
-  for (let i = 0; i < r.max; i++) {
-    const p = r.players[i], row = el("div", "row" + (p ? "" : " empty"));
-    if (p) {
-      row.append(el("span", "", p.name));
-      const tags = el("div", "tags");
-      if (p.id === r.host) tags.append(el("span", "gold", "방장"));
-      if (p.id === S.pid) tags.append(el("span", "", "나")), (tags.lastChild.style.color = "var(--ok)");
-      if (!p.at_lobby) tags.append(el("span", "muted", "결과 보는 중"));
-      row.append(tags);
-    } else row.textContent = "비어 있음";
+  for (const p of r.players) {
+    const row = el("div", "row");
+    row.append(el("span", "", p.name));
+    const tags = el("div", "tags");
+    if (p.id === r.host) tags.append(el("span", "gold", "방장"));
+    if (p.id === S.pid) { const me = el("span", "", "나"); me.style.color = "var(--ok)"; tags.append(me); }
+    if (!p.at_lobby) tags.append(el("span", "muted", "결과 보는 중"));
+    row.append(tags);
     box.append(row);
   }
+  const free = r.max - r.players.length;
+  if (free > 0) box.append(el("div", "row empty", `비어 있는 자리 ${free}개`));
   const [ok, why] = startState();
   $("#btn-start").disabled = !ok;
   const w = $("#start-why"); w.textContent = why; w.style.color = isHost() ? "var(--danger)" : "var(--muted)";
@@ -461,10 +465,8 @@ function loadScaled(file) {
 async function uploadFiles(files) {
   if (!S.room || S.screen !== "room") return;
   if (S.room.mode === "default") return toast("기본 사진 모드에서는 업로드할 수 없어요", "error");
-  const left = MAX_UPLOADS - me().uploads;
-  if (left <= 0) return toast(`사진은 ${MAX_UPLOADS}장까지 올릴 수 있어요`, "error");
   let bad = 0;
-  for (const f of files.slice(0, left)) {
+  for (const f of files) {
     try { send({ t: "upload", data: await loadScaled(f) }); } catch (e) { bad++; }
   }
   if (bad) toast(`사진 ${bad}장은 열 수 없는 파일이에요`, "error");
