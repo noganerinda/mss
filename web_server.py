@@ -59,6 +59,8 @@ class WSWriter:
         self.w = writer
 
     def write(self, data: bytes):
+        if self.w.is_closing():            # 이미 끊긴 연결에는 보내지 않음
+            return
         self.w.write(ws_frame(0x1, data[4:]))     # 앞의 4바이트 길이 헤더는 웹소켓에선 불필요
 
 
